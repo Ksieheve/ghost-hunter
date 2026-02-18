@@ -1,10 +1,10 @@
+<!-- Ghost Hunter – created by [REAL SPY/sanatani spy] (2025) -->
 <!DOCTYPE html>
 <html lang="en">
-<!-- Ghost Hunter – created by [REAL SPY/sanatani spy] (2025) -->
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ghost Hunter · Refined</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Ghost Hunter · Mobile Ready</title>
     <style>
         * {
             margin: 0;
@@ -12,17 +12,22 @@
             box-sizing: border-box;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
         }
 
         body {
-            background: radial-gradient(circle at 30% 10%, #261447, #0b0722);
+            background: #0b0722;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
             touch-action: none;
-            padding: 10px;
+            padding: 0;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
         }
 
         .game-wrapper {
@@ -31,13 +36,15 @@
             align-items: center;
             justify-content: center;
             width: 100%;
+            height: 100%;
             max-width: 1000px;
-            border-radius: 48px;
+            border-radius: 0;
             background: rgba(20, 10, 35, 0.5);
             backdrop-filter: blur(12px);
             box-shadow: 0 30px 40px rgba(0, 0, 0, 0.6), 0 0 30px #9f7aff80;
-            padding: 20px 20px 30px;
-            border: 1px solid rgba(180, 130, 255, 0.5);
+            padding: 10px;
+            border: none;
+            position: relative;
         }
 
         .stats-panel {
@@ -45,144 +52,276 @@
             justify-content: space-between;
             align-items: center;
             width: 100%;
-            margin-bottom: 18px;
-            padding: 10px 25px;
+            margin-bottom: 10px;
+            padding: 8px 15px;
             background: rgba(10, 5, 20, 0.7);
             backdrop-filter: blur(8px);
-            border-radius: 60px;
+            border-radius: 40px;
             border: 1px solid #a07dff;
-            box-shadow: 0 8px 20px #3a236a;
+            box-shadow: 0 4px 10px #3a236a;
             color: white;
             font-weight: bold;
-            font-size: 1.3rem;
+            font-size: 1rem;
             text-shadow: 0 2px 5px #00000080;
         }
 
         .stat-item {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 4px;
             background: rgba(255,255,255,0.1);
-            padding: 6px 20px;
-            border-radius: 40px;
+            padding: 4px 12px;
+            border-radius: 30px;
             backdrop-filter: blur(4px);
         }
 
         .stat-icon {
-            font-size: 1.7rem;
+            font-size: 1.2rem;
             filter: drop-shadow(0 0 6px cyan);
         }
 
         .canvas-container {
             position: relative;
             width: 100%;
+            flex: 1;
             display: flex;
             justify-content: center;
-            border-radius: 36px;
+            border-radius: 24px;
             overflow: hidden;
-            box-shadow: 0 25px 35px black, 0 0 0 3px #b380ff, 0 0 20px #b57cff;
+            box-shadow: 0 10px 20px black, 0 0 0 2px #b380ff, 0 0 15px #b57cff;
+            min-height: 0;
+            background: #141024;
         }
 
         #gameCanvas {
             display: block;
             width: 100%;
-            max-width: 800px;
-            aspect-ratio: 800 / 600;
+            height: 100%;
+            object-fit: contain;
             background: #141024;
-            cursor: none; /* we'll draw a custom small cursor */
             touch-action: none;
         }
 
-        /* Joystick - smaller & more transparent */
+        /* Joystick - positioned absolutely over canvas */
         .joystick-area {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
-            width: 110px;
-            height: 110px;
-            border-radius: 100px;
-            background: rgba(20, 10, 35, 0.4);
+            bottom: 15px;
+            left: 15px;
+            width: 100px;
+            height: 100px;
+            border-radius: 50px;
+            background: rgba(20, 10, 35, 0.5);
             backdrop-filter: blur(8px);
-            border: 2px solid rgba(200, 160, 255, 0.5);
-            box-shadow: 0 10px 25px #00000099;
+            border: 2px solid rgba(200, 160, 255, 0.6);
+            box-shadow: 0 5px 15px #00000099;
             display: flex;
             align-items: center;
             justify-content: center;
             touch-action: none;
-            z-index: 10;
+            z-index: 20;
         }
 
         .joystick-thumb {
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             background: radial-gradient(circle at 30% 30%, #f0e4ff, #9f72e6);
             border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.8);
-            box-shadow: 0 5px 15px black;
+            border: 2px solid rgba(255,255,255,0.9);
+            box-shadow: 0 3px 10px black;
             transition: transform 0.02s;
             touch-action: none;
             will-change: transform;
         }
 
-        /* Custom cursor (drawn in JS overlay) - hidden by default, we'll draw it on canvas */
+        /* Fullscreen and rotation buttons */
+        .control-buttons {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+            z-index: 30;
+        }
+
+        .control-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 22px;
+            background: rgba(20, 10, 35, 0.6);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(200, 160, 255, 0.6);
+            color: white;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px black;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .control-btn:active {
+            transform: scale(0.9);
+            background: rgba(100, 70, 200, 0.8);
+        }
+
         .restart-btn {
             background: linear-gradient(145deg, #6a4cc7, #402e8b);
             border: none;
             color: white;
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: bold;
-            padding: 15px 45px;
-            border-radius: 60px;
-            margin-top: 20px;
-            box-shadow: 0 15px 0 #2b1b5a, 0 10px 30px black;
+            padding: 12px 30px;
+            border-radius: 40px;
+            margin: 10px 0;
+            box-shadow: 0 8px 0 #2b1b5a, 0 5px 15px black;
             cursor: pointer;
             transition: 0.08s linear;
             border: 2px solid #c7a6ff;
             letter-spacing: 1px;
             display: none;
+            z-index: 40;
         }
 
         .restart-btn:active {
-            transform: translateY(8px);
-            box-shadow: 0 7px 0 #2b1b5a, 0 15px 30px black;
+            transform: translateY(5px);
+            box-shadow: 0 3px 0 #2b1b5a, 0 5px 15px black;
         }
 
         .restart-btn.visible {
             display: block;
         }
 
-        /* mobile adjustments */
+        /* Rotation overlay */
+        .rotate-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #0b0722;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            flex-direction: column;
+        }
+
+        .rotate-overlay.show {
+            display: flex;
+        }
+
+        .rotate-icon {
+            font-size: 4rem;
+            animation: rotate 2s infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(90deg); }
+            50% { transform: rotate(180deg); }
+            75% { transform: rotate(270deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         @media (max-width: 600px) {
-            .stats-panel { font-size: 1rem; padding: 8px 12px; }
-            .stat-item { padding: 4px 12px; }
-            .joystick-area { width: 90px; height: 90px; bottom: 10px; left: 10px; }
-            .joystick-thumb { width: 40px; height: 40px; }
+            .stats-panel { font-size: 0.9rem; padding: 6px 10px; }
+            .stat-item { padding: 3px 8px; }
+            .joystick-area { width: 80px; height: 80px; bottom: 10px; left: 10px; }
+            .joystick-thumb { width: 35px; height: 35px; }
+            .control-btn { width: 40px; height: 40px; font-size: 1.1rem; }
         }
     </style>
 </head>
 <body>
-<div class="game-wrapper">
-    <div class="stats-panel">
-        <div class="stat-item"><span class="stat-icon">🏆</span> <span id="scoreDisplay">0</span></div>
-        <div class="stat-item"><span class="stat-icon">🧂</span> <span id="saltDisplay">10</span></div>
-        <div class="stat-item"><span class="stat-icon">❤️</span> <span id="healthDisplay">5/5</span></div>
+    <!-- Rotation warning overlay -->
+    <div class="rotate-overlay" id="rotateOverlay">
+        <div class="rotate-icon">🔄</div>
+        <h2>Please rotate your device</h2>
+        <p>This game works best in landscape mode</p>
     </div>
 
-    <div class="canvas-container">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
-        <!-- Virtual joystick (movement) -->
-        <div class="joystick-area" id="joystickBase">
-            <div class="joystick-thumb" id="joystickThumb"></div>
+    <div class="game-wrapper">
+        <div class="stats-panel">
+            <div class="stat-item"><span class="stat-icon">🏆</span> <span id="scoreDisplay">0</span></div>
+            <div class="stat-item"><span class="stat-icon">🧂</span> <span id="saltDisplay">10</span></div>
+            <div class="stat-item"><span class="stat-icon">❤️</span> <span id="healthDisplay">5/5</span></div>
         </div>
-        <!-- No shoot hint -->
-    </div>
 
-    <button class="restart-btn" id="restartButton">↻ PLAY AGAIN</button>
-</div>
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+            
+            <!-- Virtual joystick for movement -->
+            <div class="joystick-area" id="joystickBase">
+                <div class="joystick-thumb" id="joystickThumb"></div>
+            </div>
+
+            <!-- Control buttons -->
+            <div class="control-buttons">
+                <button class="control-btn" id="fullscreenBtn" aria-label="Fullscreen">⛶</button>
+            </div>
+        </div>
+
+        <button class="restart-btn" id="restartButton">↻ PLAY AGAIN</button>
+    </div>
 
 <script>
 (function() {
-    // ---------- CONSTANTS ----------
+    // Check orientation
+    function checkOrientation() {
+        const overlay = document.getElementById('rotateOverlay');
+        if (window.innerHeight > window.innerWidth) {
+            overlay.classList.add('show');
+        } else {
+            overlay.classList.remove('show');
+        }
+    }
+    
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', checkOrientation);
+    checkOrientation();
+
+    // Fullscreen functionality
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const gameWrapper = document.querySelector('.game-wrapper');
+    
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
+    fullscreenBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        toggleFullscreen();
+    });
+
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.log('Fullscreen failed:', err);
+            });
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+    }
+
+    // Listen for fullscreen change
+    document.addEventListener('fullscreenchange', updateFullscreenButton);
+    document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+    
+    function updateFullscreenButton() {
+        if (document.fullscreenElement) {
+            fullscreenBtn.textContent = '✕';
+            fullscreenBtn.style.background = 'rgba(200, 70, 70, 0.8)';
+        } else {
+            fullscreenBtn.textContent = '⛶';
+            fullscreenBtn.style.background = 'rgba(20, 10, 35, 0.6)';
+        }
+    }
+
+    // ---------- GAME CONSTANTS ----------
     const WIDTH = 800, HEIGHT = 600;
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -219,6 +358,9 @@
     function rectCollide(r1, r2) {
         return !(r2.x >= r1.x + r1.w || r2.x + r2.w <= r1.x || r2.y >= r1.y + r1.h || r2.y + r2.h <= r1.y);
     }
+
+    // ---------- FIX 1: Ghost limit system ----------
+    const MAX_GHOSTS = 8; // Maximum total ghosts at once
 
     // ---------- PLAYER ----------
     class Player {
@@ -385,6 +527,101 @@
         checkCollision(p) { return Math.hypot(this.x-p.x,this.y-p.y) < this.radius+p.radius; }
     }
 
+    // ---------- FIX 2: Mobile shooting with touch ----------
+    // We'll track touch position for shooting
+    let shootTouchId = null;
+    let lastTouchX = -1, lastTouchY = -1;
+
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (game.state !== 'playing' && game.state !== 'final_round') return;
+        
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        
+        // Convert to canvas coordinates
+        const canvasX = (touch.clientX - rect.left) * scaleX;
+        const canvasY = (touch.clientY - rect.top) * scaleY;
+        
+        // Check if touch is NOT on joystick area (rough check)
+        const joystickRect = document.getElementById('joystickBase').getBoundingClientRect();
+        const isOnJoystick = (
+            touch.clientX >= joystickRect.left && 
+            touch.clientX <= joystickRect.right && 
+            touch.clientY >= joystickRect.top && 
+            touch.clientY <= joystickRect.bottom
+        );
+        
+        if (!isOnJoystick) {
+            // This is a shooting touch
+            shootTouchId = touch.identifier;
+            lastTouchX = canvasX;
+            lastTouchY = canvasY;
+            
+            // Shoot immediately
+            let dx = canvasX - game.player.x;
+            let dy = canvasY - game.player.y;
+            let len = Math.hypot(dx, dy) || 0.1;
+            game.throwSalt(dx/len, dy/len);
+        }
+    }, {passive:false});
+
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (game.state !== 'playing' && game.state !== 'final_round') return;
+        
+        // Update shooting direction if we have an active shoot touch
+        if (shootTouchId !== null) {
+            for (let i = 0; i < e.touches.length; i++) {
+                if (e.touches[i].identifier === shootTouchId) {
+                    const touch = e.touches[i];
+                    const rect = canvas.getBoundingClientRect();
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    
+                    lastTouchX = (touch.clientX - rect.left) * scaleX;
+                    lastTouchY = (touch.clientY - rect.top) * scaleY;
+                    break;
+                }
+            }
+        }
+    }, {passive:false});
+
+    canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        // Clear shoot touch if it ended
+        for (let i = 0; i < e.touches.length; i++) {
+            if (e.touches[i].identifier === shootTouchId) {
+                shootTouchId = null;
+                break;
+            }
+        }
+        if (e.touches.length === 0) {
+            shootTouchId = null;
+        }
+    });
+
+    canvas.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        shootTouchId = null;
+    });
+
+    // Mouse shooting (for desktop)
+    canvas.addEventListener('click', (e) => {
+        if (game.state !== 'playing' && game.state !== 'final_round') return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        let dx = x - game.player.x;
+        let dy = y - game.player.y;
+        let len = Math.hypot(dx, dy) || 0.1;
+        game.throwSalt(dx/len, dy/len);
+    });
+
     // ---------- GAME MANAGER ----------
     class Game {
         constructor() {
@@ -402,14 +639,21 @@
             this.pickupSpawnTimer = 0;
             this.saltCooldown = 0;
 
+            // Start with 3 black, 2 blue ghosts
             for (let i=0;i<3;i++) this.spawnGhost('black');
             for (let i=0;i<2;i++) this.spawnGhost('blue');
         }
+        
         spawnGhost(type) {
+            // FIX 1: Check ghost limit
+            const totalGhosts = this.blackGhosts.length + this.blueGhosts.length;
+            if (totalGhosts >= MAX_GHOSTS) return;
+            
             let x = Math.random()*(WIDTH-100)+50, y = Math.random()*(HEIGHT-100)+50;
             if (type==='black') this.blackGhosts.push(new BlackGhost(x,y));
             else this.blueGhosts.push(new BlueGhost(x,y));
         }
+        
         spawnPickup() {
             for (let a=0;a<100;a++) {
                 let x = Math.random()*(WIDTH-100)+50, y = Math.random()*(HEIGHT-100)+50;
@@ -423,13 +667,16 @@
                 }
             }
         }
+        
         spawnBoss(type, pos) {
             let x = pos?pos[0]:(Math.random()*(WIDTH-200)+100);
             let y = pos?pos[1]:(Math.random()*(HEIGHT-200)+100);
             if (type==='red') this.redBosses.push(new RedBoss(x,y));
             else this.purpleBosses.push(new PurpleBoss(x,y));
         }
+        
         canThrowSalt() { return this.saltCooldown===0 && this.player.saltCount>0; }
+        
         throwSalt(dx,dy) {
             if (this.canThrowSalt()) {
                 this.salts.push(new SaltProjectile(this.player.x,this.player.y,dx,dy));
@@ -437,6 +684,7 @@
                 this.saltCooldown = 15;
             }
         }
+        
         update() {
             if (this.state==='game_over'||this.state==='victory') return;
 
@@ -445,16 +693,21 @@
             this.ghostSpawnTimer++;
             this.pickupSpawnTimer++;
 
+            // FIX 1: Respect ghost limit when spawning
+            const totalGhosts = this.blackGhosts.length + this.blueGhosts.length;
+            
             if (this.redBosses.length===0 && this.ghostSpawnTimer>=90) {
                 this.ghostSpawnTimer=0;
-                if (this.blackGhosts.length+this.blueGhosts.length<8) {
+                if (totalGhosts < MAX_GHOSTS) {
                     if (Math.random()<0.6) this.spawnGhost('black'); else this.spawnGhost('blue');
                 }
             }
+            
             if (this.pickupSpawnTimer>=180 && this.pickups.length<5) {
                 this.pickupSpawnTimer=0; this.spawnPickup();
             }
 
+            // Update and check collisions for ghosts
             for (let g of [...this.blackGhosts]) {
                 g.update(this.player.x,this.player.y);
                 if (g.checkCollision(this.player) && this.damageCooldown===0) {
@@ -472,6 +725,7 @@
                 }
             }
 
+            // Update bosses
             for (let b of [...this.redBosses, ...this.purpleBosses]) {
                 b.update(this.player.x,this.player.y);
                 if (b.checkCollision(this.player) && this.damageCooldown===0) {
@@ -485,9 +739,12 @@
                 }
             }
 
+            // Update salts
             for (let s of [...this.salts]) {
                 s.update();
                 if (!s.active) { this.salts = this.salts.filter(x=>x!==s); continue; }
+                
+                // Check against black ghosts
                 for (let g of [...this.blackGhosts]) {
                     if (Math.hypot(s.x-g.x,s.y-g.y) < s.radius+g.radius) {
                         this.blackGhosts = this.blackGhosts.filter(x=>x!==g);
@@ -495,6 +752,8 @@
                         s.active=false; this.salts = this.salts.filter(x=>x!==s); break;
                     }
                 } if (!s.active) continue;
+                
+                // Check against blue ghosts
                 for (let g of [...this.blueGhosts]) {
                     if (Math.hypot(s.x-g.x,s.y-g.y) < s.radius+g.radius) {
                         this.blueGhosts = this.blueGhosts.filter(x=>x!==g);
@@ -502,6 +761,8 @@
                         s.active=false; this.salts = this.salts.filter(x=>x!==s); break;
                     }
                 } if (!s.active) continue;
+                
+                // Check against red bosses
                 for (let b of [...this.redBosses]) {
                     if (Math.hypot(s.x-b.x,s.y-b.y) < s.radius+b.radius) {
                         b.health--; s.active=false; this.salts = this.salts.filter(x=>x!==s);
@@ -509,6 +770,8 @@
                         break;
                     }
                 } if (!s.active) continue;
+                
+                // Check against purple bosses
                 for (let b of [...this.purpleBosses]) {
                     if (Math.hypot(s.x-b.x,s.y-b.y) < s.radius+b.radius) {
                         b.health--; s.active=false; this.salts = this.salts.filter(x=>x!==s);
@@ -518,6 +781,7 @@
                 }
             }
 
+            // Check pickups
             for (let p of [...this.pickups]) {
                 if (p.checkCollision(this.player)) {
                     if (p.type==='salt') this.player.saltCount += Math.floor(Math.random()*3)+2;
@@ -529,9 +793,11 @@
                 }
             }
 
+            // Boss spawn conditions
             if (this.score>=25 && this.redBosses.length===0 && this.purpleBosses.length===0) this.spawnBoss('red');
             if (this.score>=70 && this.purpleBosses.length===0) this.spawnBoss('purple');
 
+            // Final round condition
             if (this.score>=101 && this.redBosses.length===0 && this.purpleBosses.length===0 && this.state==='playing') {
                 this.state='final_round';
                 const corners = [[100,100], [WIDTH-100,100], [WIDTH-100,HEIGHT-100]];
@@ -551,13 +817,18 @@
 
             if (this.state==='final_round' && this.purpleBosses.length===0) this.state='victory';
         }
+        
         draw() {
             ctx.clearRect(0,0,WIDTH,HEIGHT);
             ctx.fillStyle=BACKGROUND; ctx.fillRect(0,0,WIDTH,HEIGHT);
+            
+            // Draw walls
             for (let w of walls) {
                 ctx.fillStyle=WALL_COLOR; ctx.fillRect(w.x,w.y,w.w,w.h);
                 ctx.strokeStyle=WALL_BORDER; ctx.lineWidth=2; ctx.strokeRect(w.x,w.y,w.w,w.h);
             }
+            
+            // Draw all game objects
             this.player.draw();
             for (let g of this.blackGhosts) g.draw();
             for (let g of this.blueGhosts) g.draw();
@@ -566,6 +837,7 @@
             for (let s of this.salts) s.draw();
             for (let p of this.pickups) p.draw();
 
+            // Draw state messages
             if (this.state==='final_round') {
                 ctx.fillStyle='#ff4d4d'; ctx.font='bold 42px Arial'; ctx.textAlign='center';
                 ctx.fillText('FINAL ROUND!',400,100);
@@ -581,12 +853,14 @@
                 ctx.font='28px Arial'; ctx.fillStyle='#eee'; ctx.fillText(`Score: ${this.score}`,400,360);
             }
 
+            // Draw warnings
             if (this.score>=23 && this.score<25 && this.redBosses.length===0) {
                 ctx.fillStyle='#ffaaaa'; ctx.font='bold 24px Arial'; ctx.fillText('⚠ Red Boss incoming at 25 ⚠',400,550);
             } else if (this.score>=68 && this.score<70 && this.purpleBosses.length===0) {
                 ctx.fillStyle='#d9b3ff'; ctx.font='bold 24px Arial'; ctx.fillText('⚠ Purple Boss incoming at 70 ⚠',400,550);
             }
 
+            // Update UI
             scoreSpan.innerText = this.score;
             saltSpan.innerText = this.player.saltCount;
             healthSpan.innerText = `${this.player.health}/${this.player.maxHealth}`;
@@ -603,6 +877,7 @@
         e.preventDefault();
         joystickActive = true;
     }
+    
     function handleJoystickMove(e) {
         if (!joystickActive) return;
         e.preventDefault();
@@ -619,6 +894,7 @@
         joystickVector = { x: dx, y: dy };
         thumb.style.transform = `translate(${dx * maxDist}px, ${dy * maxDist}px)`;
     }
+    
     function handleJoystickEnd(e) {
         e.preventDefault();
         joystickActive = false;
@@ -626,6 +902,7 @@
         thumb.style.transform = `translate(0px, 0px)`;
     }
 
+    // Joystick event listeners
     base.addEventListener('touchstart', handleJoystickStart, {passive:false});
     base.addEventListener('touchmove', handleJoystickMove, {passive:false});
     base.addEventListener('touchend', handleJoystickEnd);
@@ -647,37 +924,21 @@
     });
     window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
 
-    // ---------- TAP TO SHOOT ----------
-    canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        if (game.state !== 'playing' && game.state !== 'final_round') return;
-        const touch = e.touches[0];
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        const x = (touch.clientX - rect.left) * scaleX;
-        const y = (touch.clientY - rect.top) * scaleY;
-        let dx = x - game.player.x;
-        let dy = y - game.player.y;
-        let len = Math.hypot(dx, dy) || 0.1;
-        game.throwSalt(dx/len, dy/len);
-    }, {passive:false});
-
-    canvas.addEventListener('click', (e) => {
-        if (game.state !== 'playing' && game.state !== 'final_round') return;
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
-        let dx = x - game.player.x;
-        let dy = y - game.player.y;
-        let len = Math.hypot(dx, dy) || 0.1;
-        game.throwSalt(dx/len, dy/len);
+    // Space bar shooting
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && (game.state === 'playing' || game.state === 'final_round')) {
+            e.preventDefault();
+            // Shoot in facing direction
+            let dx = game.player.faceDir[0];
+            let dy = game.player.faceDir[1];
+            if (dx === 0 && dy === 0) {
+                dx = 0; dy = -1;
+            }
+            game.throwSalt(dx, dy);
+        }
     });
 
-    // ---------- CUSTOM CURSOR (small dot) ----------
-    // We'll draw a small dot at mouse position when on desktop
+    // Custom cursor for desktop
     let mouseX = -100, mouseY = -100;
     canvas.addEventListener('mousemove', (e) => {
         const rect = canvas.getBoundingClientRect();
@@ -688,11 +949,12 @@
     });
     canvas.addEventListener('mouseleave', () => { mouseX = -100; mouseY = -100; });
 
-    // Override the draw loop to also draw the cursor
+    // Override draw to include cursor and shoot indicator
     const origDraw = Game.prototype.draw;
     Game.prototype.draw = function() {
         origDraw.call(this);
-        // draw custom small cursor if inside canvas
+        
+        // Draw custom cursor
         if (mouseX >= 0 && mouseX < WIDTH && mouseY >= 0 && mouseY < HEIGHT) {
             ctx.beginPath();
             ctx.arc(mouseX, mouseY, 6, 0, 2*Math.PI);
@@ -700,6 +962,25 @@
             ctx.fill();
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+        
+        // Draw shooting indicator for mobile
+        if (shootTouchId !== null && lastTouchX >= 0) {
+            ctx.beginPath();
+            ctx.arc(lastTouchX, lastTouchY, 10, 0, 2*Math.PI);
+            ctx.strokeStyle = '#ff99ff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(255, 150, 255, 0.3)';
+            ctx.fill();
+            
+            // Draw line from player to touch
+            ctx.beginPath();
+            ctx.moveTo(this.player.x, this.player.y);
+            ctx.lineTo(lastTouchX, lastTouchY);
+            ctx.strokeStyle = 'rgba(255, 200, 255, 0.5)';
+            ctx.lineWidth = 2;
             ctx.stroke();
         }
     };
@@ -712,6 +993,7 @@
     });
 
     function gameLoop() {
+        // Handle movement from joystick or keyboard
         let dx = joystickVector.x, dy = joystickVector.y;
         if (dx === 0 && dy === 0) {
             if (keys['arrowleft']||keys['a']) dx = -1;
@@ -720,6 +1002,7 @@
             if (keys['arrowdown']||keys['s']) dy = 1;
             if (dx !== 0 && dy !== 0) { dx *= 0.7071; dy *= 0.7071; }
         }
+        
         if (game.state === 'playing' || game.state === 'final_round') {
             game.player.move(dx, dy);
         }
@@ -737,6 +1020,7 @@
     }
     gameLoop();
 
+    // Prevent context menu
     canvas.addEventListener('contextmenu', e=>e.preventDefault());
 })();
 </script>
