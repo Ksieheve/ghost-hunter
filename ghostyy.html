@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- Ghost Hunter – created by [REAL SPY/sanatani spy] (2025) -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ghost Hunter · Refined</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: radial-gradient(circle at 30% 10%, #261447, #0b0722);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            touch-action: none;
+            padding: 10px;
+        }
+
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 1000px;
+            border-radius: 48px;
+            background: rgba(20, 10, 35, 0.5);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 30px 40px rgba(0, 0, 0, 0.6), 0 0 30px #9f7aff80;
+            padding: 20px 20px 30px;
+            border: 1px solid rgba(180, 130, 255, 0.5);
+        }
+
+        .stats-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 18px;
+            padding: 10px 25px;
+            background: rgba(10, 5, 20, 0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 60px;
+            border: 1px solid #a07dff;
+            box-shadow: 0 8px 20px #3a236a;
+            color: white;
+            font-weight: bold;
+            font-size: 1.3rem;
+            text-shadow: 0 2px 5px #00000080;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.1);
+            padding: 6px 20px;
+            border-radius: 40px;
+            backdrop-filter: blur(4px);
+        }
+
+        .stat-icon {
+            font-size: 1.7rem;
+            filter: drop-shadow(0 0 6px cyan);
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            border-radius: 36px;
+            overflow: hidden;
+            box-shadow: 0 25px 35px black, 0 0 0 3px #b380ff, 0 0 20px #b57cff;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 800 / 600;
+            background: #141024;
+            cursor: none; /* we'll draw a custom small cursor */
+            touch-action: none;
+        }
+
+        /* Joystick - smaller & more transparent */
+        .joystick-area {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 110px;
+            height: 110px;
+            border-radius: 100px;
+            background: rgba(20, 10, 35, 0.4);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(200, 160, 255, 0.5);
+            box-shadow: 0 10px 25px #00000099;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            z-index: 10;
+        }
+
+        .joystick-thumb {
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle at 30% 30%, #f0e4ff, #9f72e6);
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.8);
+            box-shadow: 0 5px 15px black;
+            transition: transform 0.02s;
+            touch-action: none;
+            will-change: transform;
+        }
+
+        /* Custom cursor (drawn in JS overlay) - hidden by default, we'll draw it on canvas */
+        .restart-btn {
+            background: linear-gradient(145deg, #6a4cc7, #402e8b);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            padding: 15px 45px;
+            border-radius: 60px;
+            margin-top: 20px;
+            box-shadow: 0 15px 0 #2b1b5a, 0 10px 30px black;
+            cursor: pointer;
+            transition: 0.08s linear;
+            border: 2px solid #c7a6ff;
+            letter-spacing: 1px;
+            display: none;
+        }
+
+        .restart-btn:active {
+            transform: translateY(8px);
+            box-shadow: 0 7px 0 #2b1b5a, 0 15px 30px black;
+        }
+
+        .restart-btn.visible {
+            display: block;
+        }
+
+        /* mobile adjustments */
+        @media (max-width: 600px) {
+            .stats-panel { font-size: 1rem; padding: 8px 12px; }
+            .stat-item { padding: 4px 12px; }
+            .joystick-area { width: 90px; height: 90px; bottom: 10px; left: 10px; }
+            .joystick-thumb { width: 40px; height: 40px; }
+        }
+    </style>
+</head>
+<body>
+<div class="game-wrapper">
+    <div class="stats-panel">
+        <div class="stat-item"><span class="stat-icon">🏆</span> <span id="scoreDisplay">0</span></div>
+        <div class="stat-item"><span class="stat-icon">🧂</span> <span id="saltDisplay">10</span></div>
+        <div class="stat-item"><span class="stat-icon">❤️</span> <span id="healthDisplay">5/5</span></div>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <!-- Virtual joystick (movement) -->
+        <div class="joystick-area" id="joystickBase">
+            <div class="joystick-thumb" id="joystickThumb"></div>
+        </div>
+        <!-- No shoot hint -->
+    </div>
+
+    <button class="restart-btn" id="restartButton">↻ PLAY AGAIN</button>
+</div>
+
+<script>
+(function() {
+    // ---------- CONSTANTS ----------
+    const WIDTH = 800, HEIGHT = 600;
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreSpan = document.getElementById('scoreDisplay');
+    const saltSpan = document.getElementById('saltDisplay');
+    const healthSpan = document.getElementById('healthDisplay');
+    const restartBtn = document.getElementById('restartButton');
+
+    // Colors
+    const SAFFRON = '#ff9933';
+    const BLACK = '#222222';
+    const BLUE = '#3a7bd5';
+    const RED = '#e63946';
+    const PURPLE = '#9d4edd';
+    const SILVER = '#cccccc';
+    const WHITE = '#ffffff';
+    const HEALTH_GREEN = '#2ecc71';
+    const SALT_COLOR = '#e0e0ff';
+    const BACKGROUND = '#1e1a2e';
+    const WALL_COLOR = '#4b3b6b';
+    const WALL_BORDER = '#2d1f44';
+
+    // Walls
+    const walls = [
+        { x: 0, y: 0, w: 800, h: 20 },
+        { x: 0, y: 580, w: 800, h: 20 },
+        { x: 0, y: 0, w: 20, h: 600 },
+        { x: 780, y: 0, w: 20, h: 600 },
+        { x: 200, y: 20, w: 20, h: 400 },
+        { x: 400, y: 180, w: 20, h: 400 },
+        { x: 600, y: 20, w: 20, h: 400 }
+    ];
+
+    function rectCollide(r1, r2) {
+        return !(r2.x >= r1.x + r1.w || r2.x + r2.w <= r1.x || r2.y >= r1.y + r1.h || r2.y + r2.h <= r1.y);
+    }
+
+    // ---------- PLAYER ----------
+    class Player {
+        constructor() {
+            this.x = 100; this.y = 100; this.radius = 18; this.speed = 5;
+            this.health = 5; this.maxHealth = 5; this.saltCount = 10;
+            this.faceDir = [0, -1];
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, 2*Math.PI);
+            ctx.fillStyle = SAFFRON;
+            ctx.fill();
+            ctx.strokeStyle = '#ffd966';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            const barW = 40, barH = 6;
+            ctx.fillStyle = '#8b0000';
+            ctx.fillRect(this.x - barW/2, this.y - this.radius - 15, barW, barH);
+            ctx.fillStyle = HEALTH_GREEN;
+            ctx.fillRect(this.x - barW/2, this.y - this.radius - 15, barW * (this.health/this.maxHealth), barH);
+
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y);
+            ctx.lineTo(this.x + this.faceDir[0]*25, this.y + this.faceDir[1]*25);
+            ctx.strokeStyle = WHITE;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+        move(dx, dy) {
+            if (dx !== 0 || dy !== 0) {
+                let len = Math.hypot(dx, dy);
+                this.faceDir = [dx/len, dy/len];
+            }
+            let newX = this.x + dx * this.speed;
+            let newY = this.y + dy * this.speed;
+            let playerRect = { x: newX - this.radius, y: newY - this.radius, w: this.radius*2, h: this.radius*2 };
+
+            let canMoveX = true, canMoveY = true;
+            for (let w of walls) {
+                if (rectCollide(playerRect, w)) {
+                    if (dx > 0 && playerRect.x + playerRect.w > w.x && newX - this.radius < w.x + w.w) {
+                        if (playerRect.x + playerRect.w - w.x < 15) {
+                            canMoveX = false;
+                            newX = w.x - this.radius;
+                        }
+                    } else if (dx < 0 && playerRect.x < w.x + w.w && newX + this.radius > w.x) {
+                        if (w.x + w.w - playerRect.x < 15) {
+                            canMoveX = false;
+                            newX = w.x + w.w + this.radius;
+                        }
+                    }
+                    if (dy > 0 && playerRect.y + playerRect.h > w.y && newY - this.radius < w.y + w.h) {
+                        if (playerRect.y + playerRect.h - w.y < 15) {
+                            canMoveY = false;
+                            newY = w.y - this.radius;
+                        }
+                    } else if (dy < 0 && playerRect.y < w.y + w.h && newY + this.radius > w.y) {
+                        if (w.y + w.h - playerRect.y < 15) {
+                            canMoveY = false;
+                            newY = w.y + w.h + this.radius;
+                        }
+                    }
+                }
+            }
+            if (canMoveX) this.x = newX;
+            if (canMoveY) this.y = newY;
+        }
+        takeDamage(amount) { this.health = Math.max(0, this.health - amount); }
+        heal(amount) { this.health = Math.min(this.maxHealth, this.health + amount); }
+    }
+
+    // ---------- GHOSTS ----------
+    class Ghost {
+        constructor(x, y, radius, speed, damage, points, color) {
+            this.x = x; this.y = y; this.radius = radius; this.speed = speed;
+            this.damage = damage; this.points = points; this.color = color;
+        }
+        update(playerX, playerY) {
+            let dx = playerX - this.x;
+            let dy = playerY - this.y;
+            let dist = Math.hypot(dx, dy) || 0.1;
+            this.x += (dx / dist) * this.speed;
+            this.y += (dy / dist) * this.speed;
+            this.x = Math.max(this.radius, Math.min(WIDTH - this.radius, this.x));
+            this.y = Math.max(this.radius, Math.min(HEIGHT - this.radius, this.y));
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, 2*Math.PI);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+            ctx.fillStyle = WHITE;
+            ctx.beginPath(); ctx.arc(this.x-5, this.y-5, 3, 0, 2*Math.PI); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x+5, this.y-5, 3, 0, 2*Math.PI); ctx.fill();
+        }
+        checkCollision(player) {
+            return Math.hypot(this.x - player.x, this.y - player.y) < this.radius + player.radius;
+        }
+    }
+    class BlackGhost extends Ghost { constructor(x,y) { super(x,y,15,2.0,1,1,BLACK); } }
+    class BlueGhost extends Ghost { constructor(x,y) { super(x,y,12,3.2,0.5,2,BLUE); } }
+
+    // ---------- BOSSES ----------
+    class Boss {
+        constructor(x,y,radius,speed,damage,health,points,color,dustCooldown,dustRadius,dustDamage) {
+            this.x=x; this.y=y; this.radius=radius; this.speed=speed; this.damage=damage;
+            this.health=health; this.maxHealth=health; this.points=points; this.color=color;
+            this.dustCooldown=dustCooldown; this.dustTimer=Math.floor(Math.random()*dustCooldown);
+            this.dustRadius=dustRadius; this.dustDamage=dustDamage;
+        }
+        update(playerX, playerY) {
+            let dx = playerX - this.x, dy = playerY - this.y;
+            let dist = Math.hypot(dx, dy) || 0.1;
+            this.x += (dx/dist)*this.speed;
+            this.y += (dy/dist)*this.speed;
+            this.x = Math.max(this.radius, Math.min(WIDTH-this.radius, this.x));
+            this.y = Math.max(this.radius, Math.min(HEIGHT-this.radius, this.y));
+            this.dustTimer++;
+        }
+        draw() {
+            ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, 2*Math.PI); ctx.fillStyle = this.color; ctx.fill();
+            ctx.fillStyle = '#ffd966';
+            ctx.beginPath();
+            ctx.moveTo(this.x-25, this.y-this.radius-5);
+            ctx.lineTo(this.x-15, this.y-this.radius-15);
+            ctx.lineTo(this.x, this.y-this.radius-20);
+            ctx.lineTo(this.x+15, this.y-this.radius-15);
+            ctx.lineTo(this.x+25, this.y-this.radius-5);
+            ctx.closePath(); ctx.fill();
+
+            const barW=60, barH=8;
+            ctx.fillStyle='#330000'; ctx.fillRect(this.x-barW/2, this.y-this.radius-25, barW, barH);
+            ctx.fillStyle=RED; ctx.fillRect(this.x-barW/2, this.y-this.radius-25, barW*(this.health/this.maxHealth), barH);
+
+            if (this.dustTimer >= this.dustCooldown-30) {
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.dustRadius, 0, 2*Math.PI); ctx.strokeStyle=SILVER; ctx.lineWidth=2; ctx.stroke();
+            }
+        }
+        checkCollision(p) { return Math.hypot(this.x-p.x, this.y-p.y) < this.radius+p.radius; }
+        canUseDust() { return this.dustTimer >= this.dustCooldown; }
+        useDust() { this.dustTimer = 0; }
+        checkDustHit(p) { return Math.hypot(this.x-p.x, this.y-p.y) < this.dustRadius; }
+    }
+    class RedBoss extends Boss { constructor(x,y) { super(x,y,35,1.5,1.0,10,10,RED,120,150,1.5); } }
+    class PurpleBoss extends Boss { constructor(x,y) { let h = Math.floor(Math.random()*6)+15; super(x,y,40,1.8,1.0,h,20,PURPLE,100,150,1.5); } }
+
+    // ---------- SALT ----------
+    class SaltProjectile {
+        constructor(x,y,dx,dy) { this.x=x; this.y=y; this.dx=dx; this.dy=dy; this.radius=5; this.speed=8; this.active=true; }
+        update() { this.x+=this.dx*this.speed; this.y+=this.dy*this.speed; if (this.x<-50||this.x>WIDTH+50||this.y<-50||this.y>HEIGHT+50) this.active=false; }
+        draw() { ctx.beginPath(); ctx.arc(this.x,this.y,this.radius,0,2*Math.PI); ctx.fillStyle=SALT_COLOR; ctx.fill(); }
+    }
+
+    // ---------- PICKUP ----------
+    class Pickup {
+        constructor(x,y,type) { this.x=x; this.y=y; this.radius=10; this.type=type; this.color=type==='salt'?SALT_COLOR:HEALTH_GREEN; }
+        draw() {
+            ctx.beginPath(); ctx.arc(this.x,this.y,this.radius,0,2*Math.PI); ctx.fillStyle=this.color; ctx.fill();
+            ctx.fillStyle=WHITE; ctx.font='bold 14px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+            if (this.type==='health') ctx.fillText('+',this.x,this.y-1); else ctx.fillText('S',this.x,this.y-1);
+        }
+        checkCollision(p) { return Math.hypot(this.x-p.x,this.y-p.y) < this.radius+p.radius; }
+    }
+
+    // ---------- GAME MANAGER ----------
+    class Game {
+        constructor() {
+            this.player = new Player();
+            this.blackGhosts = [];
+            this.blueGhosts = [];
+            this.redBosses = [];
+            this.purpleBosses = [];
+            this.salts = [];
+            this.pickups = [];
+            this.score = 0;
+            this.state = 'playing';
+            this.damageCooldown = 0;
+            this.ghostSpawnTimer = 0;
+            this.pickupSpawnTimer = 0;
+            this.saltCooldown = 0;
+
+            for (let i=0;i<3;i++) this.spawnGhost('black');
+            for (let i=0;i<2;i++) this.spawnGhost('blue');
+        }
+        spawnGhost(type) {
+            let x = Math.random()*(WIDTH-100)+50, y = Math.random()*(HEIGHT-100)+50;
+            if (type==='black') this.blackGhosts.push(new BlackGhost(x,y));
+            else this.blueGhosts.push(new BlueGhost(x,y));
+        }
+        spawnPickup() {
+            for (let a=0;a<100;a++) {
+                let x = Math.random()*(WIDTH-100)+50, y = Math.random()*(HEIGHT-100)+50;
+                let rect = {x:x-10,y:y-10,w:20,h:20};
+                let valid = true;
+                for (let w of walls) if (rectCollide(rect,w)) { valid=false; break; }
+                if (valid) {
+                    let type = Math.random()<0.7?'salt':'health';
+                    this.pickups.push(new Pickup(x,y,type));
+                    return;
+                }
+            }
+        }
+        spawnBoss(type, pos) {
+            let x = pos?pos[0]:(Math.random()*(WIDTH-200)+100);
+            let y = pos?pos[1]:(Math.random()*(HEIGHT-200)+100);
+            if (type==='red') this.redBosses.push(new RedBoss(x,y));
+            else this.purpleBosses.push(new PurpleBoss(x,y));
+        }
+        canThrowSalt() { return this.saltCooldown===0 && this.player.saltCount>0; }
+        throwSalt(dx,dy) {
+            if (this.canThrowSalt()) {
+                this.salts.push(new SaltProjectile(this.player.x,this.player.y,dx,dy));
+                this.player.saltCount--;
+                this.saltCooldown = 15;
+            }
+        }
+        update() {
+            if (this.state==='game_over'||this.state==='victory') return;
+
+            this.damageCooldown = Math.max(0,this.damageCooldown-1);
+            this.saltCooldown = Math.max(0,this.saltCooldown-1);
+            this.ghostSpawnTimer++;
+            this.pickupSpawnTimer++;
+
+            if (this.redBosses.length===0 && this.ghostSpawnTimer>=90) {
+                this.ghostSpawnTimer=0;
+                if (this.blackGhosts.length+this.blueGhosts.length<8) {
+                    if (Math.random()<0.6) this.spawnGhost('black'); else this.spawnGhost('blue');
+                }
+            }
+            if (this.pickupSpawnTimer>=180 && this.pickups.length<5) {
+                this.pickupSpawnTimer=0; this.spawnPickup();
+            }
+
+            for (let g of [...this.blackGhosts]) {
+                g.update(this.player.x,this.player.y);
+                if (g.checkCollision(this.player) && this.damageCooldown===0) {
+                    this.player.takeDamage(g.damage); this.damageCooldown=30;
+                    this.blackGhosts = this.blackGhosts.filter(x=>x!==g);
+                    if (this.player.health<=0) this.state='game_over';
+                }
+            }
+            for (let g of [...this.blueGhosts]) {
+                g.update(this.player.x,this.player.y);
+                if (g.checkCollision(this.player) && this.damageCooldown===0) {
+                    this.player.takeDamage(g.damage); this.damageCooldown=30;
+                    this.blueGhosts = this.blueGhosts.filter(x=>x!==g);
+                    if (this.player.health<=0) this.state='game_over';
+                }
+            }
+
+            for (let b of [...this.redBosses, ...this.purpleBosses]) {
+                b.update(this.player.x,this.player.y);
+                if (b.checkCollision(this.player) && this.damageCooldown===0) {
+                    this.player.takeDamage(b.damage); this.damageCooldown=30;
+                    if (this.player.health<=0) this.state='game_over';
+                }
+                if (b.canUseDust() && b.checkDustHit(this.player) && this.damageCooldown===0) {
+                    this.player.takeDamage(b.dustDamage); this.damageCooldown=30;
+                    b.useDust();
+                    if (this.player.health<=0) this.state='game_over';
+                }
+            }
+
+            for (let s of [...this.salts]) {
+                s.update();
+                if (!s.active) { this.salts = this.salts.filter(x=>x!==s); continue; }
+                for (let g of [...this.blackGhosts]) {
+                    if (Math.hypot(s.x-g.x,s.y-g.y) < s.radius+g.radius) {
+                        this.blackGhosts = this.blackGhosts.filter(x=>x!==g);
+                        this.score += g.points;
+                        s.active=false; this.salts = this.salts.filter(x=>x!==s); break;
+                    }
+                } if (!s.active) continue;
+                for (let g of [...this.blueGhosts]) {
+                    if (Math.hypot(s.x-g.x,s.y-g.y) < s.radius+g.radius) {
+                        this.blueGhosts = this.blueGhosts.filter(x=>x!==g);
+                        this.score += g.points;
+                        s.active=false; this.salts = this.salts.filter(x=>x!==s); break;
+                    }
+                } if (!s.active) continue;
+                for (let b of [...this.redBosses]) {
+                    if (Math.hypot(s.x-b.x,s.y-b.y) < s.radius+b.radius) {
+                        b.health--; s.active=false; this.salts = this.salts.filter(x=>x!==s);
+                        if (b.health<=0) { this.redBosses = this.redBosses.filter(x=>x!==b); this.score += b.points; }
+                        break;
+                    }
+                } if (!s.active) continue;
+                for (let b of [...this.purpleBosses]) {
+                    if (Math.hypot(s.x-b.x,s.y-b.y) < s.radius+b.radius) {
+                        b.health--; s.active=false; this.salts = this.salts.filter(x=>x!==s);
+                        if (b.health<=0) { this.purpleBosses = this.purpleBosses.filter(x=>x!==b); this.score += b.points; }
+                        break;
+                    }
+                }
+            }
+
+            for (let p of [...this.pickups]) {
+                if (p.checkCollision(this.player)) {
+                    if (p.type==='salt') this.player.saltCount += Math.floor(Math.random()*3)+2;
+                    else {
+                        this.player.heal(1);
+                        if (this.player.maxHealth<10 && Math.random()<0.3) { this.player.maxHealth++; this.player.heal(1); }
+                    }
+                    this.pickups = this.pickups.filter(x=>x!==p);
+                }
+            }
+
+            if (this.score>=25 && this.redBosses.length===0 && this.purpleBosses.length===0) this.spawnBoss('red');
+            if (this.score>=70 && this.purpleBosses.length===0) this.spawnBoss('purple');
+
+            if (this.score>=101 && this.redBosses.length===0 && this.purpleBosses.length===0 && this.state==='playing') {
+                this.state='final_round';
+                const corners = [[100,100], [WIDTH-100,100], [WIDTH-100,HEIGHT-100]];
+                let playerCorner = -1;
+                for (let i=0;i<corners.length;i++) {
+                    if (Math.hypot(this.player.x-corners[i][0], this.player.y-corners[i][1])<200) { playerCorner=i; break; }
+                }
+                let bossCount=0;
+                for (let i=0;i<3;i++) {
+                    if (i!==playerCorner || bossCount>=2) {
+                        if (bossCount<2) this.spawnBoss('red', corners[i]);
+                        else this.spawnBoss('purple', corners[i]);
+                        bossCount++;
+                    }
+                }
+            }
+
+            if (this.state==='final_round' && this.purpleBosses.length===0) this.state='victory';
+        }
+        draw() {
+            ctx.clearRect(0,0,WIDTH,HEIGHT);
+            ctx.fillStyle=BACKGROUND; ctx.fillRect(0,0,WIDTH,HEIGHT);
+            for (let w of walls) {
+                ctx.fillStyle=WALL_COLOR; ctx.fillRect(w.x,w.y,w.w,w.h);
+                ctx.strokeStyle=WALL_BORDER; ctx.lineWidth=2; ctx.strokeRect(w.x,w.y,w.w,w.h);
+            }
+            this.player.draw();
+            for (let g of this.blackGhosts) g.draw();
+            for (let g of this.blueGhosts) g.draw();
+            for (let b of this.redBosses) b.draw();
+            for (let b of this.purpleBosses) b.draw();
+            for (let s of this.salts) s.draw();
+            for (let p of this.pickups) p.draw();
+
+            if (this.state==='final_round') {
+                ctx.fillStyle='#ff4d4d'; ctx.font='bold 42px Arial'; ctx.textAlign='center';
+                ctx.fillText('FINAL ROUND!',400,100);
+                ctx.font='24px Arial'; ctx.fillStyle='#ccc';
+                ctx.fillText(`Bosses left: ${this.redBosses.length+this.purpleBosses.length}`,400,150);
+            } else if (this.state==='game_over') {
+                ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.fillRect(0,0,WIDTH,HEIGHT);
+                ctx.fillStyle='#ff4d4d'; ctx.font='bold 52px Arial'; ctx.fillText('GAME OVER',400,280);
+                ctx.font='28px Arial'; ctx.fillStyle='#eee'; ctx.fillText(`Score: ${this.score}`,400,360);
+            } else if (this.state==='victory') {
+                ctx.fillStyle='rgba(30,80,30,0.7)'; ctx.fillRect(0,0,WIDTH,HEIGHT);
+                ctx.fillStyle='#b7ffb7'; ctx.font='bold 52px Arial'; ctx.fillText('VICTORY!',400,280);
+                ctx.font='28px Arial'; ctx.fillStyle='#eee'; ctx.fillText(`Score: ${this.score}`,400,360);
+            }
+
+            if (this.score>=23 && this.score<25 && this.redBosses.length===0) {
+                ctx.fillStyle='#ffaaaa'; ctx.font='bold 24px Arial'; ctx.fillText('⚠ Red Boss incoming at 25 ⚠',400,550);
+            } else if (this.score>=68 && this.score<70 && this.purpleBosses.length===0) {
+                ctx.fillStyle='#d9b3ff'; ctx.font='bold 24px Arial'; ctx.fillText('⚠ Purple Boss incoming at 70 ⚠',400,550);
+            }
+
+            scoreSpan.innerText = this.score;
+            saltSpan.innerText = this.player.saltCount;
+            healthSpan.innerText = `${this.player.health}/${this.player.maxHealth}`;
+        }
+    }
+
+    // ---------- JOYSTICK ----------
+    const base = document.getElementById('joystickBase');
+    const thumb = document.getElementById('joystickThumb');
+    let joystickActive = false;
+    let joystickVector = { x:0, y:0 };
+
+    function handleJoystickStart(e) {
+        e.preventDefault();
+        joystickActive = true;
+    }
+    function handleJoystickMove(e) {
+        if (!joystickActive) return;
+        e.preventDefault();
+        const touch = e.touches ? e.touches[0] : e;
+        const rect = base.getBoundingClientRect();
+        const baseX = rect.left + rect.width/2;
+        const baseY = rect.top + rect.height/2;
+        const maxDist = rect.width/2 - 8;
+
+        let dx = (touch.clientX - baseX) / maxDist;
+        let dy = (touch.clientY - baseY) / maxDist;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 1.0) { dx /= dist; dy /= dist; }
+        joystickVector = { x: dx, y: dy };
+        thumb.style.transform = `translate(${dx * maxDist}px, ${dy * maxDist}px)`;
+    }
+    function handleJoystickEnd(e) {
+        e.preventDefault();
+        joystickActive = false;
+        joystickVector = { x:0, y:0 };
+        thumb.style.transform = `translate(0px, 0px)`;
+    }
+
+    base.addEventListener('touchstart', handleJoystickStart, {passive:false});
+    base.addEventListener('touchmove', handleJoystickMove, {passive:false});
+    base.addEventListener('touchend', handleJoystickEnd);
+    base.addEventListener('touchcancel', handleJoystickEnd);
+    base.addEventListener('mousedown', handleJoystickStart);
+    window.addEventListener('mousemove', (e) => { if (joystickActive) handleJoystickMove(e); });
+    window.addEventListener('mouseup', handleJoystickEnd);
+
+    // ---------- KEYBOARD FALLBACK ----------
+    let keys = {};
+    window.addEventListener('keydown', (e) => {
+        const key = e.key.toLowerCase();
+        keys[key] = true;
+        if (key==='r' && (game.state==='game_over'||game.state==='victory')) {
+            game = new Game();
+            restartBtn.classList.remove('visible');
+        }
+        if (['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d',' '].includes(key)) e.preventDefault();
+    });
+    window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+
+    // ---------- TAP TO SHOOT ----------
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (game.state !== 'playing' && game.state !== 'final_round') return;
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (touch.clientX - rect.left) * scaleX;
+        const y = (touch.clientY - rect.top) * scaleY;
+        let dx = x - game.player.x;
+        let dy = y - game.player.y;
+        let len = Math.hypot(dx, dy) || 0.1;
+        game.throwSalt(dx/len, dy/len);
+    }, {passive:false});
+
+    canvas.addEventListener('click', (e) => {
+        if (game.state !== 'playing' && game.state !== 'final_round') return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+        let dx = x - game.player.x;
+        let dy = y - game.player.y;
+        let len = Math.hypot(dx, dy) || 0.1;
+        game.throwSalt(dx/len, dy/len);
+    });
+
+    // ---------- CUSTOM CURSOR (small dot) ----------
+    // We'll draw a small dot at mouse position when on desktop
+    let mouseX = -100, mouseY = -100;
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        mouseX = (e.clientX - rect.left) * scaleX;
+        mouseY = (e.clientY - rect.top) * scaleY;
+    });
+    canvas.addEventListener('mouseleave', () => { mouseX = -100; mouseY = -100; });
+
+    // Override the draw loop to also draw the cursor
+    const origDraw = Game.prototype.draw;
+    Game.prototype.draw = function() {
+        origDraw.call(this);
+        // draw custom small cursor if inside canvas
+        if (mouseX >= 0 && mouseX < WIDTH && mouseY >= 0 && mouseY < HEIGHT) {
+            ctx.beginPath();
+            ctx.arc(mouseX, mouseY, 6, 0, 2*Math.PI);
+            ctx.fillStyle = 'rgba(255, 180, 255, 0.5)';
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+    };
+
+    // ---------- GAME LOOP ----------
+    let game = new Game();
+    restartBtn.addEventListener('click', () => {
+        game = new Game();
+        restartBtn.classList.remove('visible');
+    });
+
+    function gameLoop() {
+        let dx = joystickVector.x, dy = joystickVector.y;
+        if (dx === 0 && dy === 0) {
+            if (keys['arrowleft']||keys['a']) dx = -1;
+            if (keys['arrowright']||keys['d']) dx = 1;
+            if (keys['arrowup']||keys['w']) dy = -1;
+            if (keys['arrowdown']||keys['s']) dy = 1;
+            if (dx !== 0 && dy !== 0) { dx *= 0.7071; dy *= 0.7071; }
+        }
+        if (game.state === 'playing' || game.state === 'final_round') {
+            game.player.move(dx, dy);
+        }
+
+        game.update();
+        game.draw();
+
+        if (game.state === 'game_over' || game.state === 'victory') {
+            restartBtn.classList.add('visible');
+        } else {
+            restartBtn.classList.remove('visible');
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+    gameLoop();
+
+    canvas.addEventListener('contextmenu', e=>e.preventDefault());
+})();
+</script>
+</body>
+</html>
