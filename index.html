@@ -1055,12 +1055,15 @@
                 });
 
                 // Boss spawns
-                if (this.score >= 25 && this.redBosses.length === 0 && this.purpleBosses.length === 0) {
-                    this.redBosses.push(new Boss(400, 300, 'red'));
-                }
-                if (this.score >= 70 && this.purpleBosses.length === 0) {
-                    this.purpleBosses.push(new Boss(400, 300, 'purple'));
-                }
+                // Boss spawns - only spawn if score below final round threshold
+				if (this.score < 101) {
+    				if (this.score >= 25 && this.redBosses.length === 0 && this.purpleBosses.length === 0) {
+        				this.redBosses.push(new Boss(400, 300, 'red'));
+    				}
+    				if (this.score >= 70 && this.purpleBosses.length === 0) {
+       			 		this.purpleBosses.push(new Boss(400, 300, 'purple'));
+    				}
+				}
 
                 // Final round
                 if (this.score >= 101 && this.redBosses.length === 0 && this.purpleBosses.length === 0 && this.state === 'playing') {
@@ -1338,3 +1341,4 @@
     </script>
 </body>
 </html>
+
