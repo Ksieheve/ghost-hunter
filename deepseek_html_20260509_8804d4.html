@@ -1,0 +1,899 @@
+<!-- Ghost Hunter – Responsive & Immersive Web Game (2026) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0718">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>GHOST HUNTER</title>
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0a0718;
+            --purple: #8b5cf6;
+            --purple-dark: #4c1d95;
+            --gold: #ff9933;
+            --danger: #ef4444;
+        }
+
+        html {
+            height: 100%;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            background: var(--bg);
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            height: 100vh;
+            height: 100dvh;
+            width: 100vw;
+            width: 100dvw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            overflow: hidden;
+            margin: 0;
+        }
+
+        /* ===== FULLSCREEN GAME WRAPPER ===== */
+        .game-fullscreen-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #1a1035;
+            border: 2px solid var(--purple);
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        /* Canvas fills container while preserving aspect ratio */
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            cursor: none;
+        }
+
+        /* STATS OVERLAY – always on top inside game container */
+        .stats-overlay {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            padding: 6px 12px;
+            border-radius: 40px;
+            border: 1px solid var(--purple);
+            color: white;
+            z-index: 20;
+            pointer-events: none;
+            font-weight: bold;
+            font-size: clamp(0.7rem, 1.5vw, 1rem);
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .stats-overlay .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        .stats-overlay button.settings-btn-mini {
+            pointer-events: auto;
+            background: var(--purple);
+            border: none;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: clamp(0.65rem, 1.2vw, 0.8rem);
+            font-weight: bold;
+            cursor: pointer;
+            border: 1px solid white;
+            transition: 0.2s;
+            flex-shrink: 0;
+        }
+        .stats-overlay button.settings-btn-mini:active {
+            background: #7c3aed;
+            transform: scale(0.95);
+        }
+
+        /* JOYSTICK & SHOOT BUTTON (mobile) */
+        .joystick {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 2px solid var(--purple);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+            touch-action: none;
+        }
+        .joystick.active {
+            display: flex;
+        }
+        .joystick-thumb {
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle at 35% 35%, #fff, #8b5cf6);
+            border-radius: 50%;
+            border: 2px solid white;
+            pointer-events: none;
+            transition: transform 0.02s;
+        }
+
+        .shoot-btn {
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(255,80,60,0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 3px solid #ff6655;
+            color: white;
+            font-size: 1.6rem;
+            font-weight: bold;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+            cursor: pointer;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.1s;
+        }
+        .shoot-btn.active {
+            display: flex;
+        }
+        .shoot-btn:active {
+            background: rgba(255,50,30,0.8);
+            transform: scale(0.92);
+        }
+
+        /* FULLSCREEN TOGGLE BUTTON */
+        .fullscreen-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 2px solid var(--purple);
+            color: white;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 25;
+            transition: all 0.2s;
+        }
+        .fullscreen-btn:active {
+            background: var(--purple);
+            transform: scale(0.9);
+        }
+
+        /* SETTINGS MODAL (hidden by default) */
+        .settings-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .settings-modal.show {
+            display: flex;
+        }
+        .settings-content {
+            background: linear-gradient(145deg, #1e1a3a, #0f0b20);
+            border: 3px solid var(--purple);
+            border-radius: 32px;
+            padding: 20px;
+            max-width: 400px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: white;
+            text-align: center;
+        }
+        .settings-header {
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            font-weight: bold;
+        }
+        .setting-group {
+            margin-bottom: 20px;
+        }
+        .setting-label {
+            color: #c4b5fd;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .setting-options {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .setting-option {
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid transparent;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: bold;
+        }
+        .setting-option.selected {
+            background: var(--purple);
+            border-color: white;
+        }
+        .close-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            border: 2px solid white;
+        }
+        .close-btn:active {
+            background: #cc2222;
+        }
+
+        /* RESTART BUTTON (outside game, inside wrapper) */
+        .restart-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(145deg, #6d28d9, #4c1d95);
+            border: 3px solid var(--purple);
+            color: white;
+            font-size: clamp(1rem, 2vw, 1.3rem);
+            font-weight: bold;
+            padding: 10px 30px;
+            border-radius: 40px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #2e1065;
+            z-index: 50;
+            display: none;
+            white-space: nowrap;
+            transition: 0.1s;
+        }
+        .restart-btn.visible {
+            display: block;
+        }
+        .restart-btn:active {
+            transform: translateX(-50%) translateY(4px);
+            box-shadow: 0 2px 0 #2e1065;
+        }
+
+        /* Hide unnecessary UI in landscape (optional, still shows stats overlay) */
+        @media (orientation: landscape) {
+            /* Stats overlay remains; header/bottom cards are already removed from HTML */
+        }
+    </style>
+</head>
+<body>
+    <!-- Settings Modal -->
+    <div class="settings-modal" id="settingsModal">
+        <div class="settings-content">
+            <div class="settings-header">⚙️ SETTINGS</div>
+            <div class="setting-group">
+                <div class="setting-label">DIFFICULTY</div>
+                <div class="setting-options">
+                    <div class="setting-option" onclick="setDifficulty('easy')" id="diffEasy">EASY</div>
+                    <div class="setting-option selected" onclick="setDifficulty('medium')" id="diffMedium">MEDIUM</div>
+                    <div class="setting-option" onclick="setDifficulty('hard')" id="diffHard">HARD</div>
+                </div>
+            </div>
+            <div class="setting-group">
+                <div class="setting-label">CURSOR (desktop)</div>
+                <div class="setting-options">
+                    <div class="setting-option selected" onclick="setCursor('cross')" id="curCross">CROSS</div>
+                    <div class="setting-option" onclick="setCursor('dot')" id="curDot">DOT</div>
+                    <div class="setting-option" onclick="setCursor('none')" id="curNone">NONE</div>
+                </div>
+            </div>
+            <button class="close-btn" onclick="closeSettings()">CLOSE</button>
+        </div>
+    </div>
+
+    <!-- Fullscreen game wrapper (no header/footer outside) -->
+    <div class="game-fullscreen-wrapper" id="gameFullscreenWrapper">
+        <div id="gameContainer">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+            <!-- STATS OVERLAY (inside container) -->
+            <div class="stats-overlay" id="statsOverlay">
+                <div class="stat-item"><span>🏆</span> <span id="score">0</span></div>
+                <div class="stat-item"><span>🧂</span> <span id="salt">10</span></div>
+                <div class="stat-item"><span>❤️</span> <span id="health">5/10</span></div>
+                <button class="settings-btn-mini" onclick="openSettings()">⚙️</button>
+            </div>
+            <!-- Mobile Joystick -->
+            <div class="joystick" id="joystick">
+                <div class="joystick-thumb" id="joystickThumb"></div>
+            </div>
+            <!-- Mobile Shoot Button -->
+            <button class="shoot-btn" id="shootBtn">💥</button>
+            <!-- Fullscreen Toggle -->
+            <div class="fullscreen-btn" onclick="toggleFullscreen()" title="Fullscreen">⛶</div>
+        </div>
+        <button class="restart-btn" id="restartBtn" onclick="restartGame()">↻ PLAY AGAIN</button>
+    </div>
+
+    <script>
+        (function(){
+            // ========== SETTINGS ==========
+            let currentDifficulty = 'medium';
+            let currentCursor = 'cross';
+            let game;
+
+            window.openSettings = function() {
+                document.getElementById('settingsModal').classList.add('show');
+            };
+            window.closeSettings = function() {
+                document.getElementById('settingsModal').classList.remove('show');
+            };
+            window.setDifficulty = function(level) {
+                currentDifficulty = level;
+                ['Easy','Medium','Hard'].forEach(d => {
+                    document.getElementById(`diff${d}`).classList.remove('selected');
+                });
+                document.getElementById(`diff${level.charAt(0).toUpperCase()+level.slice(1)}`).classList.add('selected');
+                if (game) restartGame();
+            };
+            window.setCursor = function(style) {
+                currentCursor = style;
+                ['Cross','Dot','None'].forEach(c => {
+                    document.getElementById(`cur${c}`).classList.remove('selected');
+                });
+                document.getElementById(`cur${style.charAt(0).toUpperCase()+style.slice(1)}`).classList.add('selected');
+            };
+
+            // ========== FULLSCREEN ==========
+            window.toggleFullscreen = function() {
+                const el = document.documentElement;
+                if (!document.fullscreenElement) {
+                    if (el.requestFullscreen) el.requestFullscreen();
+                    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+                } else {
+                    if (document.exitFullscreen) document.exitFullscreen();
+                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                }
+            };
+
+            // ========== CANVAS & GAME ==========
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const WIDTH = 800, HEIGHT = 600;
+
+            const DIFFICULTY_MULT = { easy: 1.0, medium: 1.5, hard: 2.0 };
+
+            const MAPS = {
+                classic: {
+                    walls: [
+                        {x:0,y:0,w:800,h:20}, {x:0,y:580,w:800,h:20},
+                        {x:0,y:0,w:20,h:600}, {x:780,y:0,w:20,h:600},
+                        {x:200,y:20,w:20,h:400}, {x:400,y:180,w:20,h:400},
+                        {x:600,y:20,w:20,h:400}
+                    ],
+                    background: '#1a1035'
+                }
+            };
+            let currentMap = MAPS.classic;
+
+            // ========== CLASSES ==========
+            class Player {
+                constructor() {
+                    this.x = 100; this.y = 100; this.radius = 18;
+                    this.speed = 5; this.health = 5; this.maxHealth = 10;
+                    this.salt = 10; this.facing = {x:0, y:-1};
+                }
+                move(dx, dy) {
+                    if (dx !== 0 || dy !== 0) {
+                        const len = Math.hypot(dx, dy);
+                        this.facing = {x: dx/len, y: dy/len};
+                    }
+                    let nx = this.x + dx * this.speed;
+                    let ny = this.y + dy * this.speed;
+                    for (let iter=0; iter<10; iter++) {
+                        let collided = false;
+                        for (let w of currentMap.walls) {
+                            const cx = Math.max(w.x, Math.min(nx, w.x+w.w));
+                            const cy = Math.max(w.y, Math.min(ny, w.y+w.h));
+                            const cdx = nx - cx, cdy = ny - cy;
+                            const dist = Math.hypot(cdx, cdy);
+                            if (dist < this.radius) {
+                                collided = true;
+                                if (dist === 0) { nx = w.x+w.w+this.radius; ny = w.y+w.h+this.radius; }
+                                else {
+                                    const overlap = this.radius - dist;
+                                    nx += (cdx/dist) * overlap;
+                                    ny += (cdy/dist) * overlap;
+                                }
+                                break;
+                            }
+                        }
+                        if (!collided) break;
+                    }
+                    this.x = Math.max(this.radius, Math.min(WIDTH-this.radius, nx));
+                    this.y = Math.max(this.radius, Math.min(HEIGHT-this.radius, ny));
+                }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, 2*Math.PI);
+                    ctx.fillStyle = '#ff9933'; ctx.fill();
+                    ctx.strokeStyle = 'white'; ctx.lineWidth=2; ctx.stroke();
+                    let barW=40, barH=6;
+                    ctx.fillStyle='#8b0000';
+                    ctx.fillRect(this.x-barW/2, this.y-this.radius-15, barW, barH);
+                    ctx.fillStyle='#2ecc71';
+                    ctx.fillRect(this.x-barW/2, this.y-this.radius-15, barW*(this.health/this.maxHealth), barH);
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.x+this.facing.x*25, this.y+this.facing.y*25);
+                    ctx.strokeStyle='white'; ctx.lineWidth=2; ctx.stroke();
+                }
+            }
+
+            class Ghost {
+                constructor(x,y,type){
+                    this.x=x; this.y=y; this.type=type;
+                    if(type==='black'){
+                        this.radius=15; this.speed=2.0*DIFFICULTY_MULT[currentDifficulty];
+                        this.damage=1; this.points=1; this.color='#222222';
+                    }else{
+                        this.radius=12; this.speed=3.2*DIFFICULTY_MULT[currentDifficulty];
+                        this.damage=0.5; this.points=2; this.color='#3a7bd5';
+                    }
+                }
+                update(player){
+                    const dx=player.x-this.x, dy=player.y-this.y;
+                    const dist=Math.hypot(dx,dy)||1;
+                    this.x+=(dx/dist)*this.speed;
+                    this.y+=(dy/dist)*this.speed;
+                    this.x=Math.max(this.radius, Math.min(WIDTH-this.radius, this.x));
+                    this.y=Math.max(this.radius, Math.min(HEIGHT-this.radius, this.y));
+                }
+                draw(){
+                    ctx.beginPath(); ctx.arc(this.x,this.y,this.radius,0,2*Math.PI);
+                    ctx.fillStyle=this.color; ctx.fill();
+                    ctx.fillStyle='white';
+                    ctx.beginPath(); ctx.arc(this.x-5,this.y-5,3,0,2*Math.PI); ctx.fill();
+                    ctx.beginPath(); ctx.arc(this.x+5,this.y-5,3,0,2*Math.PI); ctx.fill();
+                }
+                checkCollision(p){ return Math.hypot(this.x-p.x, this.y-p.y) < this.radius+p.radius; }
+            }
+
+            class Boss {
+                constructor(x,y,type){
+                    this.x=x; this.y=y; this.type=type;
+                    if(type==='red'){
+                        this.radius=35; this.speed=1.5*DIFFICULTY_MULT[currentDifficulty];
+                        this.damage=1; this.health=10; this.maxHealth=10; this.points=10; this.color='#e63946';
+                    }else{
+                        this.radius=40; this.speed=1.8*DIFFICULTY_MULT[currentDifficulty];
+                        this.damage=1; this.health=Math.floor(Math.random()*6)+15;
+                        this.maxHealth=this.health; this.points=20; this.color='#9d4edd';
+                    }
+                    this.dustCooldown=120; this.dustTimer=Math.random()*120;
+                }
+                update(player){
+                    const dx=player.x-this.x, dy=player.y-this.y;
+                    const dist=Math.hypot(dx,dy)||1;
+                    this.x+=(dx/dist)*this.speed;
+                    this.y+=(dy/dist)*this.speed;
+                    this.dustTimer++;
+                    this.x=Math.max(this.radius, Math.min(WIDTH-this.radius, this.x));
+                    this.y=Math.max(this.radius, Math.min(HEIGHT-this.radius, this.y));
+                }
+                draw(){
+                    ctx.beginPath(); ctx.arc(this.x,this.y,this.radius,0,2*Math.PI);
+                    ctx.fillStyle=this.color; ctx.fill();
+                    ctx.fillStyle='#ffd966';
+                    ctx.beginPath();
+                    ctx.moveTo(this.x-25, this.y-this.radius-5);
+                    ctx.lineTo(this.x-15, this.y-this.radius-15);
+                    ctx.lineTo(this.x, this.y-this.radius-20);
+                    ctx.lineTo(this.x+15, this.y-this.radius-15);
+                    ctx.lineTo(this.x+25, this.y-this.radius-5);
+                    ctx.closePath(); ctx.fill();
+                    let barW=60, barH=8;
+                    ctx.fillStyle='#330000';
+                    ctx.fillRect(this.x-barW/2, this.y-this.radius-25, barW, barH);
+                    ctx.fillStyle='#e63946';
+                    ctx.fillRect(this.x-barW/2, this.y-this.radius-25, barW*(this.health/this.maxHealth), barH);
+                    const framesUntil = this.dustCooldown - this.dustTimer;
+                    if(framesUntil<30 && framesUntil>0){
+                        const alpha=0.3+0.7*(1-framesUntil/30);
+                        const pulse=1+0.05*Math.sin(Date.now()*0.02);
+                        ctx.beginPath(); ctx.arc(this.x,this.y,150*pulse,0,2*Math.PI);
+                        ctx.strokeStyle=`rgba(255,100,100,${alpha})`; ctx.lineWidth=4; ctx.stroke();
+                        ctx.fillStyle=`rgba(255,0,0,${alpha*0.15})`; ctx.fill();
+                    }else if(this.dustTimer>=this.dustCooldown){
+                        ctx.beginPath(); ctx.arc(this.x,this.y,150,0,2*Math.PI);
+                        ctx.strokeStyle='#ff0000'; ctx.lineWidth=6; ctx.stroke();
+                    }
+                }
+                checkCollision(p){ return Math.hypot(this.x-p.x, this.y-p.y) < this.radius+p.radius; }
+                canUseDust(){ return this.dustTimer>=this.dustCooldown; }
+                useDust(){ this.dustTimer=0; }
+                checkDustHit(p){ return Math.hypot(this.x-p.x, this.y-p.y) < 150; }
+            }
+
+            class Salt {
+                constructor(x,y,dx,dy){ this.x=x; this.y=y; this.dx=dx; this.dy=dy; this.radius=5; this.speed=8; this.active=true; }
+                update(){
+                    this.x+=this.dx*this.speed; this.y+=this.dy*this.speed;
+                    if(this.x<-50||this.x>WIDTH+50||this.y<-50||this.y>HEIGHT+50) this.active=false;
+                }
+                draw(){ ctx.beginPath(); ctx.arc(this.x,this.y,this.radius,0,2*Math.PI); ctx.fillStyle='#e0e0ff'; ctx.fill(); }
+            }
+
+            class Pickup {
+                constructor(x,y,type){ this.x=x; this.y=y; this.radius=10; this.type=type; this.color= type==='salt'?'#e0e0ff':'#2ecc71'; }
+                draw(){
+                    ctx.beginPath(); ctx.arc(this.x,this.y,this.radius,0,2*Math.PI); ctx.fillStyle=this.color; ctx.fill();
+                    ctx.fillStyle='white'; ctx.font='bold 14px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+                    ctx.fillText(this.type==='salt'?'S':'+', this.x, this.y);
+                }
+                checkCollision(p){ return Math.hypot(this.x-p.x, this.y-p.y) < this.radius+p.radius; }
+            }
+
+            // ========== GAME MANAGER ==========
+            class Game {
+                constructor(){
+                    this.player = new Player();
+                    this.blackGhosts=[]; this.blueGhosts=[]; this.redBosses=[]; this.purpleBosses=[];
+                    this.salts=[]; this.pickups=[]; this.score=0; this.state='playing';
+                    this.damageCooldown=0; this.saltCooldown=0; this.spawnTimer=0; this.pickupSpawnTimer=0;
+                }
+                spawnPickup(){
+                    for(let i=0;i<100;i++){
+                        const x=Math.random()*(WIDTH-100)+50, y=Math.random()*(HEIGHT-100)+50;
+                        let valid=true;
+                        for(let w of currentMap.walls) if(x>w.x-15&&x<w.x+w.w+15&&y>w.y-15&&y<w.y+w.h+15){ valid=false; break; }
+                        if(valid){ this.pickups.push(new Pickup(x,y, Math.random()<5/8?'salt':'health')); return; }
+                    }
+                }
+                update(){
+                    if(this.state!=='playing'&&this.state!=='final_round') return;
+                    this.damageCooldown=Math.max(0,this.damageCooldown-1);
+                    this.saltCooldown=Math.max(0,this.saltCooldown-1);
+                    this.spawnTimer++; this.pickupSpawnTimer++;
+
+                    if(this.spawnTimer>=90 && this.blackGhosts.length+this.blueGhosts.length<8 && this.redBosses.length===0 && this.purpleBosses.length===0){
+                        this.spawnTimer=0;
+                        const type=Math.random()<0.6?'black':'blue';
+                        let sx,sy,valid=false;
+                        for(let att=0;att<10&&!valid;att++){
+                            if(Math.random()<0.7){
+                                sx=this.player.x<400?400+Math.random()*350:50+Math.random()*350;
+                                sy=this.player.y<300?300+Math.random()*250:50+Math.random()*250;
+                            }else{ sx=50+Math.random()*700; sy=50+Math.random()*500; }
+                            valid=true;
+                            for(let w of currentMap.walls) if(sx>w.x-20&&sx<w.x+w.w+20&&sy>w.y-20&&sy<w.y+w.h+20){ valid=false; break; }
+                        }
+                        if(!valid){ sx=400; sy=300; }
+                        if(type==='black') this.blackGhosts.push(new Ghost(sx,sy,'black'));
+                        else this.blueGhosts.push(new Ghost(sx,sy,'blue'));
+                    }
+                    if(this.pickupSpawnTimer>=180 && this.pickups.length<8){ this.pickupSpawnTimer=0; this.spawnPickup(); }
+
+                    [...this.blackGhosts,...this.blueGhosts].forEach(g=>{
+                        g.update(this.player);
+                        if(g.checkCollision(this.player)&&this.damageCooldown===0){
+                            this.player.health-=g.damage; this.damageCooldown=30;
+                            if(g.type==='black') this.blackGhosts=this.blackGhosts.filter(gg=>gg!==g);
+                            else this.blueGhosts=this.blueGhosts.filter(gg=>gg!==g);
+                            if(this.player.health<=0) this.state='game_over';
+                        }
+                    });
+                    [...this.redBosses,...this.purpleBosses].forEach(b=>{
+                        b.update(this.player);
+                        if(b.checkCollision(this.player)&&this.damageCooldown===0){
+                            this.player.health-=b.damage; this.damageCooldown=30;
+                            if(this.player.health<=0) this.state='game_over';
+                        }
+                        if(b.canUseDust()&&b.checkDustHit(this.player)&&this.damageCooldown===0){
+                            this.player.health-=1.5; this.damageCooldown=30; b.useDust();
+                            if(this.player.health<=0) this.state='game_over';
+                        }
+                    });
+
+                    this.salts=this.salts.filter(s=>{
+                        s.update(); if(!s.active) return false;
+                        for(let g of [...this.blackGhosts]) if(Math.hypot(s.x-g.x,s.y-g.y)<s.radius+g.radius){
+                            this.blackGhosts=this.blackGhosts.filter(gg=>gg!==g); this.score+=g.points;
+                            this.trySpawnPickup(g.x,g.y); return false;
+                        }
+                        for(let g of [...this.blueGhosts]) if(Math.hypot(s.x-g.x,s.y-g.y)<s.radius+g.radius){
+                            this.blueGhosts=this.blueGhosts.filter(gg=>gg!==g); this.score+=g.points;
+                            this.trySpawnPickup(g.x,g.y); return false;
+                        }
+                        for(let b of [...this.redBosses,...this.purpleBosses]) if(Math.hypot(s.x-b.x,s.y-b.y)<s.radius+b.radius){
+                            b.health--; if(b.health<=0){
+                                if(b.type==='red') this.redBosses=this.redBosses.filter(bb=>bb!==b);
+                                else this.purpleBosses=this.purpleBosses.filter(bb=>bb!==b);
+                                this.score+=b.points; this.trySpawnPickup(b.x,b.y);
+                            }
+                            return false;
+                        }
+                        return true;
+                    });
+
+                    this.pickups=this.pickups.filter(p=>{
+                        if(p.checkCollision(this.player)){
+                            if(p.type==='salt') this.player.salt+=Math.floor(Math.random()*4)+1;
+                            else this.player.health=Math.min(this.player.maxHealth, this.player.health+1);
+                            return false;
+                        }
+                        return true;
+                    });
+
+                    if(this.score<101){
+                        if(this.score>=25 && this.redBosses.length===0 && this.purpleBosses.length===0) this.redBosses.push(new Boss(400,300,'red'));
+                        if(this.score>=70 && this.purpleBosses.length===0) this.purpleBosses.push(new Boss(400,300,'purple'));
+                    }
+                    if(this.score>=101 && this.redBosses.length===0 && this.purpleBosses.length===0 && this.state==='playing'){
+                        this.state='final_round';
+                        this.redBosses.push(new Boss(200,200,'red'), new Boss(600,200,'red'));
+                        this.purpleBosses.push(new Boss(400,400,'purple'));
+                    }
+                    if(this.state==='final_round' && this.redBosses.length===0 && this.purpleBosses.length===0) this.state='victory';
+
+                    document.getElementById('score').textContent=this.score;
+                    document.getElementById('salt').textContent=this.player.salt;
+                    document.getElementById('health').textContent=`${this.player.health}/${this.player.maxHealth}`;
+                }
+                trySpawnPickup(x,y){ if(Math.random()>0.4) return; this.pickups.push(new Pickup(x,y, Math.random()<5/8?'salt':'health')); }
+                draw(){
+                    ctx.fillStyle=currentMap.background; ctx.fillRect(0,0,WIDTH,HEIGHT);
+                    ctx.fillStyle='#4b3b6b'; currentMap.walls.forEach(w=>ctx.fillRect(w.x,w.y,w.w,w.h));
+                    this.player.draw();
+                    this.blackGhosts.forEach(g=>g.draw()); this.blueGhosts.forEach(g=>g.draw());
+                    this.redBosses.forEach(b=>b.draw()); this.purpleBosses.forEach(b=>b.draw());
+                    this.salts.forEach(s=>s.draw()); this.pickups.forEach(p=>p.draw());
+                    if(this.state==='final_round'){ ctx.fillStyle='#ff4d4d'; ctx.font='bold 42px Arial'; ctx.textAlign='center'; ctx.fillText('FINAL ROUND!',400,100); }
+                    else if(this.state==='game_over'){ ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.fillRect(0,0,WIDTH,HEIGHT); ctx.fillStyle='#ff4d4d'; ctx.font='bold 52px Arial'; ctx.fillText('GAME OVER',400,300); }
+                    else if(this.state==='victory'){ ctx.fillStyle='rgba(46,204,113,0.7)'; ctx.fillRect(0,0,WIDTH,HEIGHT); ctx.fillStyle='white'; ctx.font='bold 52px Arial'; ctx.fillText('VICTORY!',400,300); }
+                }
+                throwSalt(dx,dy){
+                    if(this.saltCooldown===0 && this.player.salt>0){
+                        this.salts.push(new Salt(this.player.x, this.player.y, dx, dy));
+                        this.player.salt--; this.saltCooldown=15;
+                    }
+                }
+            }
+
+            game = new Game();
+
+            // ========== CONTROLS ==========
+            let keys = {};
+            let mouseX = -1, mouseY = -1;
+            let joystickActive = false;
+            let joystickVector = {x:0,y:0};
+            const joystickEl = document.getElementById('joystick');
+            const joystickThumb = document.getElementById('joystickThumb');
+            const shootBtn = document.getElementById('shootBtn');
+            const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            if(isTouch){ joystickEl.classList.add('active'); shootBtn.classList.add('active'); }
+
+            // Keyboard
+            window.addEventListener('keydown', e=>{
+                const k = e.key.toLowerCase();
+                keys[k] = true;
+                if(k==='r' && (game.state==='game_over'||game.state==='victory')) restartGame();
+                if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d',' '].includes(k)) e.preventDefault();
+            });
+            window.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()] = false; });
+            window.addEventListener('keydown', e=>{
+                if(e.code==='Space' && (game.state==='playing'||game.state==='final_round')){
+                    e.preventDefault();
+                    game.throwSalt(game.player.facing.x, game.player.facing.y);
+                }
+            });
+
+            // Mouse (desktop)
+            canvas.addEventListener('mousemove', e=>{
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                mouseX = (e.clientX - rect.left) * scaleX;
+                mouseY = (e.clientY - rect.top) * scaleY;
+            });
+            canvas.addEventListener('mouseleave', ()=>{ mouseX=-1; mouseY=-1; });
+            canvas.addEventListener('click', e=>{
+                if(game.state!=='playing'&&game.state!=='final_round') return;
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width/rect.width, scaleY = canvas.height/rect.height;
+                const x = (e.clientX-rect.left)*scaleX, y = (e.clientY-rect.top)*scaleY;
+                const dx = x-game.player.x, dy = y-game.player.y;
+                const len = Math.hypot(dx,dy)||1;
+                game.throwSalt(dx/len, dy/len);
+            });
+
+            // Pointer‑based joystick (robust for touch & pen)
+            function handleJoystickStart(e){
+                e.preventDefault();
+                joystickActive = true;
+                joystickEl.setPointerCapture(e.pointerId);
+                updateJoystick(e);
+            }
+            function handleJoystickMove(e){
+                if(!joystickActive) return;
+                e.preventDefault();
+                updateJoystick(e);
+            }
+            function handleJoystickEnd(e){
+                joystickActive = false;
+                joystickVector = {x:0,y:0};
+                joystickThumb.style.transform = 'translate(0px,0px)';
+                joystickEl.releasePointerCapture(e.pointerId);
+            }
+            function updateJoystick(e){
+                const rect = joystickEl.getBoundingClientRect();
+                const centerX = rect.left + rect.width/2;
+                const centerY = rect.top + rect.height/2;
+                const maxDist = rect.width/2 - 10;
+                let dx = (e.clientX - centerX) / maxDist;
+                let dy = (e.clientY - centerY) / maxDist;
+                const dist = Math.hypot(dx, dy);
+                if(dist > 1){ dx /= dist; dy /= dist; }
+                joystickVector = {x:dx, y:dy};
+                joystickThumb.style.transform = `translate(${dx*maxDist}px, ${dy*maxDist}px)`;
+            }
+            joystickEl.addEventListener('pointerdown', handleJoystickStart);
+            joystickEl.addEventListener('pointermove', handleJoystickMove);
+            joystickEl.addEventListener('pointerup', handleJoystickEnd);
+            joystickEl.addEventListener('pointercancel', handleJoystickEnd);
+
+            // Shoot button
+            function shootAction(e){
+                e.preventDefault();
+                e.stopPropagation();
+                if(game.state!=='playing'&&game.state!=='final_round') return;
+                game.throwSalt(game.player.facing.x, game.player.facing.y);
+            }
+            shootBtn.addEventListener('pointerdown', shootAction);
+            shootBtn.addEventListener('touchstart', e=>{ e.preventDefault(); shootAction(e); });
+
+            // Prevent canvas touch from messing with joystick/shoot
+            canvas.addEventListener('touchstart', e=>{
+                e.preventDefault();
+                if(game.state!=='playing'&&game.state!=='final_round') return;
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width/rect.width, scaleY = canvas.height/rect.height;
+                for(let touch of e.touches){
+                    const tx = touch.clientX, ty = touch.clientY;
+                    const jsRect = joystickEl.getBoundingClientRect();
+                    const sbRect = shootBtn.getBoundingClientRect();
+                    if(tx>=jsRect.left&&tx<=jsRect.right&&ty>=jsRect.top&&ty<=jsRect.bottom) continue;
+                    if(tx>=sbRect.left&&tx<=sbRect.right&&ty>=sbRect.top&&ty<=sbRect.bottom) continue;
+                    const cx = (tx - rect.left)*scaleX, cy = (ty - rect.top)*scaleY;
+                    const dx = cx - game.player.x, dy = cy - game.player.y;
+                    const len = Math.hypot(dx,dy)||1;
+                    game.throwSalt(dx/len, dy/len);
+                }
+            }, {passive: false});
+
+            // Cursor drawing extension
+            const origDraw = Game.prototype.draw;
+            Game.prototype.draw = function(){
+                origDraw.call(this);
+                if(mouseX>=0 && mouseX<WIDTH && mouseY>=0 && mouseY<HEIGHT && currentCursor!=='none'){
+                    if(currentCursor==='cross'){
+                        ctx.strokeStyle='white'; ctx.lineWidth=2;
+                        ctx.beginPath();
+                        ctx.moveTo(mouseX-15,mouseY); ctx.lineTo(mouseX-5,mouseY);
+                        ctx.moveTo(mouseX+5,mouseY); ctx.lineTo(mouseX+15,mouseY);
+                        ctx.moveTo(mouseX,mouseY-15); ctx.lineTo(mouseX,mouseY-5);
+                        ctx.moveTo(mouseX,mouseY+5); ctx.lineTo(mouseX,mouseY+15);
+                        ctx.stroke();
+                    }else if(currentCursor==='dot'){
+                        ctx.beginPath(); ctx.arc(mouseX,mouseY,4,0,2*Math.PI); ctx.fillStyle='white'; ctx.fill();
+                    }
+                }
+            };
+
+            window.restartGame = function(){
+                game = new Game();
+                document.getElementById('restartBtn').classList.remove('visible');
+                closeSettings();
+            };
+
+            // Game loop
+            function loop(){
+                let dx = joystickVector.x, dy = joystickVector.y;
+                if(dx===0 && dy===0){
+                    if(keys['arrowleft']||keys['a']) dx=-1;
+                    if(keys['arrowright']||keys['d']) dx=1;
+                    if(keys['arrowup']||keys['w']) dy=-1;
+                    if(keys['arrowdown']||keys['s']) dy=1;
+                    if(dx!==0 && dy!==0){ dx*=0.707; dy*=0.707; }
+                }
+                if(game.state==='playing'||game.state==='final_round') game.player.move(dx, dy);
+                game.update();
+                game.draw();
+                if(game.state==='game_over'||game.state==='victory') document.getElementById('restartBtn').classList.add('visible');
+                requestAnimationFrame(loop);
+            }
+            loop();
+
+            // Prevent context menu on canvas
+            canvas.addEventListener('contextmenu', e=>e.preventDefault());
+
+            // Responsive canvas display
+            function resizeCanvas(){
+                const container = document.getElementById('gameContainer');
+                const cw = container.clientWidth, ch = container.clientHeight;
+                const ratio = WIDTH/HEIGHT;
+                let dw, dh;
+                if(cw/ch > ratio){ dh = ch; dw = dh * ratio; }
+                else{ dw = cw; dh = dw / ratio; }
+                canvas.style.width = dw + 'px';
+                canvas.style.height = dh + 'px';
+            }
+            window.addEventListener('resize', resizeCanvas);
+            window.addEventListener('orientationchange', ()=> setTimeout(resizeCanvas, 100));
+            resizeCanvas();
+        })();
+    </script>
+</body>
+</html>
